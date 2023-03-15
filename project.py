@@ -33,6 +33,13 @@ def create_user_config(yaml):
                 fh.write(' \\\n')
         fh.write('"\n')
         fh.write("set ::env(VERILOG_INCLUDE_DIRS) \"$::env(DESIGN_DIR)/include $::env(DESIGN_DIR)\"\n")
+    logging.info("top_module={}".format(top_module))
+    for line, source in enumerate(sources):
+        logging.info("source {} {}".format(line, source))
+    with open(os.path.join('src', filename), 'r') as fh2:
+        lines = fh2.readlines()
+        for line in lines:
+            logging.info("{}:{}".format(filename, line.rstrip()))
 
 
 def fetch_file(url, filename):
