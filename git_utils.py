@@ -74,12 +74,15 @@ def check_rate_limit(r):
 
 def headers_try_to_add_authorization_from_environment(headers: dict) -> bool:
     gh_token = os.getenv('GH_TOKEN', '')                 # override like gh CLI
+    print(f"INFO GH_TOKEN={len(gh_token)}", file=sys.stderr)
     if not gh_token:
         gh_token = os.getenv('GITHUB_TOKEN', '')         # GHA inherited
+        print(f"INFO GITHUB_TOKEN={len(gh_token)}", file=sys.stderr)
 
     if len(gh_token) > 0:
         # As per https://docs.github.com/en/rest/overview/authenticating-to-the-rest-api
         headers['authorization'] = 'Bearer ' + gh_token
+        print(f"INFO Bearer {gh_token[0:len(gh_token)-12]}={len(gh_token)}", file=sys.stderr)
         return True
 
     # Use a token instead which is designed to limit exposure of passwords
@@ -88,8 +91,10 @@ def headers_try_to_add_authorization_from_environment(headers: dict) -> bool:
     gh_username = os.getenv('GH_USERNAME', '')           # override like gh CLI
     if not gh_username:
         gh_username = os.getenv('GITHUB_ACTOR', '')      # GHA inherited
+    print(f"INFO GH_USERNAME={len(gh_username)}", file=sys.stderr)
 
     gh_password = os.getenv('GH_PASSWORD', '')
+    print(f"INFO GH_PASSWORD={len(gh_password)}", file=sys.stderr)
 
     if len(gh_username) > 0 and len(gh_password) > 0:
         auth_string = gh_username + ':' + gh_password
