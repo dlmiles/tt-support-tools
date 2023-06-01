@@ -6,6 +6,7 @@ import os
 import zipfile
 import io
 import errno
+import time
 import sys
 
 
@@ -35,6 +36,41 @@ def check_status(r):
     if r.status_code == 401:
         logging.error("unauthorised, check INFO.md for information about GitHub API keys")
         exit(1)
+
+def check_rate_limit(r):
+    remaining = int(r.headers.get('X-RateLimit-Remaining', -1))
+    limit = int(r.headers.get('X-RateLimit-Limit', -1))
+    reset = int(r.headers.get('X-RateLimit-Reset', sys.maxsize))
+
+    s = ''
+    status_code = r.status_code
+    content_type = r.headers.get('content-type', '')
+    if content_type != '':
+        s += f" with {content_type}"
+    content_length = r.headers.get('content-length', -1)
+    if content_length >= 0:
+        s += f" {content_length} byte(s)"
+
+    when = int(reset - time.time())
+    if when < 0:
+        when = 0
+    if remaining < (limit * 0.50):
+        logging.info(f"HTTP/{status_code} X-RateLimit {remaining}/{limit} resets in {when}s [{reset}] {s}")
+
+    # Only throttle within limits
+    if remaining > 0 and remaining < 100 and when > 0:
+        delay = (when / remaining) + 1
+        # 1000 in 20min maybe the default seen
+        if delay > 0 and delay < 10:
+            logging.warning("X-RateLimit client throttle delay %d" % delay)
+            time.sleep(delay)
+
+    if remaining == 0:
+        logging.error("X-RateLimit no API requests remaining")
+        exit(1)
+
+    #logging.debug("X-RateLimit API requests remaining %d" % remaining)
+
 
 def headers_try_to_add_authorization_from_environment(headers: dict) -> bool:
     gh_token = os.getenv('GH_TOKEN', '')                 # override like gh CLI
@@ -79,12 +115,7 @@ def fetch_file_from_git(git_url, path):
     logging.debug(api_url)
     r = requests.get(api_url, headers=headers)
     check_status(r)
-    requests_remaining = int(r.headers['X-RateLimit-Remaining'])
-    if requests_remaining == 0:
-        logging.error("no API requests remaining")
-        exit(1)
-
-    logging.debug("API requests remaining %d" % requests_remaining)
+    check_rate_limit(r)
 
     data = r.json()
     if 'content' not in data:
@@ -142,10 +173,7 @@ def install_artifacts(url, directory):
     api_url = f'https://api.github.com/repos/{user_name}/{repo}/commits'
     r = requests.get(api_url, headers=headers)
     check_status(r)
-    requests_remaining = int(r.headers['X-RateLimit-Remaining'])
-    if requests_remaining == 0:
-        logging.error("no API requests remaining")
-        exit(1)
+    check_rate_limit(r)
 
     commits = r.json()
 
@@ -205,10 +233,7 @@ def get_latest_action_url(url, directory):
     api_url = f'https://api.github.com/repos/{user_name}/{repo}/commits'
     r = requests.get(api_url, headers=headers)
     check_status(r)
-    requests_remaining = int(r.headers['X-RateLimit-Remaining'])
-    if requests_remaining == 0:
-        logging.error("no API requests remaining")
-        exit(1)
+    check_rate_limit(r)
 
     commits = r.json()
 
