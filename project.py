@@ -501,7 +501,10 @@ class Project:
         commit_id_json_path = "runs/wokwi/results/final/commit_id.json"
         if self.args.openlane2:
             commit_id_json_path = "runs/wokwi/final/commit_id.json"
-        with open(os.path.join(self.local_dir, commit_id_json_path), "w") as f:
+        commit_id_json_path_tmp = os.path.join(self.local_dir, commit_id_json_path)
+        if not os.path.exists(commit_id_json_path_tmp):
+            os.makedirs(os.path.dirname(commit_id_json_path_tmp))
+        with open(commit_id_json_path_tmp, "w") as f:
             json.dump(
                 {
                     "app": f"Tiny Tapeout {tt_version}",
