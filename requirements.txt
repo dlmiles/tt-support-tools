@@ -101,3 +101,6 @@ yowasp-runtime==1.59
     # via yowasp-yosys
 yowasp-yosys==0.42.0.0.post734
     # via tt-support-tools (pyproject.toml)
+    # docsupdate.py
+PyGitHub==2.3.0
+PyInquirer==1.0.3
